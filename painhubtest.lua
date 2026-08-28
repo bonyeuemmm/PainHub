@@ -1,4 +1,4 @@
-"local SCRIPT_NAME = "Pain Hub"
+local SCRIPT_NAME = "Pain Hub"
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -54,10 +54,26 @@ local function GetClosestFruit()
     end
     return closest
 end
+
+local function GetClosestMob()
+    local closest, dist = nil, math.huge
+    if workspace:FindFirstChild("Enemies") then
+        for _, enemy in pairs(workspace.Enemies:GetChildren()) do
+            if enemy:FindFirstChild("HumanoidRootPart") and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
+                local d = (HumanoidRootPart.Position - enemy.HumanoidRootPart.Position).Magnitude
+                if d < dist then closest, dist = enemy, d end
+            end
+        end
+    end
+    return closest
+end
+
 local function GetBoss(name)
-    for _, enemy in pairs(workspace.Enemies:GetChildren()) do
-        if enemy.Name == name and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
-            return enemy
+    if workspace:FindFirstChild("Enemies") then
+        for _, enemy in pairs(workspace.Enemies:GetChildren()) do
+            if enemy.Name == name and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
+                return enemy
+            end
         end
     end
     return nil
@@ -98,7 +114,7 @@ local function AutoUpV4()
     if mirage then
         TeleportTo(mirage:FindFirstChild("HumanoidRootPart").CFrame * CFrame.new(0, 50, 0))
         Humanoid:EquipTool(mirror)
-        wait(2)
+        task.wait(2)
         local gear = mirage:FindFirstChild("Blue Gear")
         if gear then TeleportTo(gear.CFrame) end
     else
@@ -112,7 +128,7 @@ end
 local function AutoLeviathan()
     TeleportTo(Islands["Great Tree"].CFrame * CFrame.new(0, 50, 0))
     local levi = GetDynamicModel("Leviathan")
-    if levi then
+    if levi and levi:FindFirstChild("HumanoidRootPart") then
         TeleportTo(levi.HumanoidRootPart.CFrame * CFrame.new(0, getgenv().Config.FarmDistance, 0))
         AutoAttack(levi)
     end
@@ -122,7 +138,7 @@ local function TeleportIsland(name)
     local data = Islands[name]
     if data.Dynamic then
         local model = GetDynamicModel(name)
-        if model then
+        if model and model:FindFirstChild("HumanoidRootPart") then
             TeleportTo(model.HumanoidRootPart.CFrame * CFrame.new(0, 50, 0))
         else
             TeleportTo(CFrame.new(math.random(-10000,10000), 100, math.random(-10000,10000)))
@@ -132,9 +148,9 @@ local function TeleportIsland(name)
     end
 end
 
-spawn(function()
+task.spawn(function()
     while true do
-        wait(getgenv().Config.AttackSpeed)
+        task.wait(getgenv().Config.AttackSpeed)
         pcall(function()
             local tool = Player.Backpack:FindFirstChildOfClass("Tool")
             if tool then Humanoid:EquipTool(tool) end
@@ -151,24 +167,23 @@ spawn(function()
         elseif getgenv().Config.AutoFarmBoss then
             local bossData = Bosses[getgenv().Config.SelectedBoss]
             local boss = GetBoss(getgenv().Config.SelectedBoss)
-            if boss then
+            if boss and boss:FindFirstChild("HumanoidRootPart") then
                 TeleportTo(boss.HumanoidRootPart.CFrame * CFrame.new(0, getgenv().Config.FarmDistance, 0))
                 AutoAttack(boss)
-            else
+            elseif bossData then
                 TeleportTo(bossData.CFrame * CFrame.new(0, getgenv().Config.FarmDistance, 0))
             end
         elseif getgenv().Config.AutoFarmMob then
             local mob = GetClosestMob()
-            if mob then
+            if mob and mob:FindFirstChild("HumanoidRootPart") then
                 TeleportTo(mob.HumanoidRootPart.CFrame * CFrame.new(0, getgenv().Config.FarmDistance, 0))
                 AutoAttack(mob)
             end
         end
     end
 end)
-
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = SCRIPT_NAME .. " GUI"
+ScreenGui.Name = PAIN HUB " GUI"
 ScreenGui.Parent = Player.PlayerGui
 ScreenGui.ResetOnSpawn = false
 
@@ -183,7 +198,7 @@ MainFrame.Parent = ScreenGui
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 50)
 Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-Title.Text = Pain Hub
+Title.Text = "Pain Hub"
 Title.TextColor3 = Color3.fromRGB(255, 0, 0)
 Title.TextSize = 22
 Title.Font = Enum.Font.GothamBold
@@ -307,5 +322,4 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-print(SCRIPT_NAME .. " Loaded Successfully!")
-print("Full functions: V4, Leviathan, Dragon/Kitsune Islands ready.")"
+print(PAIN HUB " Loaded Successfully!")
