@@ -1,4 +1,4 @@
-local SCRIPT_NAME = "Pain Hub"
+"local SCRIPT_NAME = "Pain Hub"
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -6,7 +6,6 @@ local VirtualUser = game:GetService("VirtualUser")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- Player
 local Player = Players.LocalPlayer
 local Character = Player.Character or Player.CharacterAdded:Wait()
 local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
@@ -55,18 +54,6 @@ local function GetClosestFruit()
     end
     return closest
 end
-
-local function GetClosestMob()
-    local closest, dist = nil, math.huge
-    for _, enemy in pairs(workspace.Enemies:GetChildren()) do
-        if enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 and enemy:FindFirstChild("HumanoidRootPart") then
-            local d = (HumanoidRootPart.Position - enemy.HumanoidRootPart.Position).Magnitude
-            if d < dist then closest, dist = enemy, d end
-        end
-    end
-    return closest
-end
-
 local function GetBoss(name)
     for _, enemy in pairs(workspace.Enemies:GetChildren()) do
         if enemy.Name == name and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
@@ -145,7 +132,6 @@ local function TeleportIsland(name)
     end
 end
 
--- Main Loop
 spawn(function()
     while true do
         wait(getgenv().Config.AttackSpeed)
@@ -281,7 +267,6 @@ TeleportTab.BackgroundTransparency = 1
 TeleportTab.Visible = false
 TeleportTab.Parent = ContentFrame
 
--- Island dropdown và teleport button (simplified)
 local IslandBtn = Instance.new("TextButton")
 IslandBtn.Size = UDim2.new(0, 250, 0, 40)
 IslandBtn.Position = UDim2.new(0, 40, 0, 20)
@@ -295,12 +280,10 @@ IslandBtn.MouseButton1Click:Connect(function()
     TeleportIsland("Dragon Island")
 end)
 
--- Create tabs
 CreateTabButton("Farm", 0, FarmTab)
 CreateTabButton("Events", 40, EventsTab)
 CreateTabButton("Teleport", 80, TeleportTab)
 
--- Draggable GUI
 local dragging, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -325,4 +308,4 @@ RunService.RenderStepped:Connect(function()
 end)
 
 print(SCRIPT_NAME .. " Loaded Successfully!")
-print("Full functions: V4, Leviathan, Dragon/Kitsune Islands ready.")
+print("Full functions: V4, Leviathan, Dragon/Kitsune Islands ready.")"
