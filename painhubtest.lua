@@ -183,7 +183,7 @@ task.spawn(function()
     end
 end)
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = PAIN HUB " GUI"
+ScreenGui.Name = SCRIPT_NAME .. " GUI"
 ScreenGui.Parent = Player.PlayerGui
 ScreenGui.ResetOnSpawn = false
 
@@ -217,15 +217,22 @@ ContentFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 ContentFrame.Parent = MainFrame
 
 local function CreateTabButton(name, posY, tabFrame)
-    local btn = Instance.new("TextButton")
+    local btn = Instance.new("ImageButton")
     btn.Size = UDim2.new(1, 0, 0, 40)
     btn.Position = UDim2.new(0, 0, 0, posY)
     btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    btn.Text = name
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 16
-    btn.Font = Enum.Font.Gotham
+    btn.Image = "rbxassetid://130284374965787"
     btn.Parent = TabFrame
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextSize = 16
+    label.Font = Enum.Font.Gotham
+    label.Parent = btn
+
     btn.MouseButton1Click:Connect(function()
         for _, frame in pairs(ContentFrame:GetChildren()) do
             if frame:IsA("Frame") then frame.Visible = (frame == tabFrame) end
@@ -247,32 +254,46 @@ EventsTab.BackgroundTransparency = 1
 EventsTab.Visible = false
 EventsTab.Parent = ContentFrame
 
-local V4Toggle = Instance.new("TextButton")
+local V4Toggle = Instance.new("ImageButton")
 V4Toggle.Size = UDim2.new(0, 250, 0, 40)
 V4Toggle.Position = UDim2.new(0, 40, 0, 20)
 V4Toggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-V4Toggle.Text = "Auto Up V4: OFF"
-V4Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-V4Toggle.TextSize = 16
-V4Toggle.Font = Enum.Font.Gotham
+V4Toggle.Image = "rbxassetid://130284374965787"
 V4Toggle.Parent = EventsTab
+
+local V4Label = Instance.new("TextLabel")
+V4Label.Size = UDim2.new(1, 0, 1, 0)
+V4Label.BackgroundTransparency = 1
+V4Label.Text = "Auto Up V4: OFF"
+V4Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+V4Label.TextSize = 16
+V4Label.Font = Enum.Font.Gotham
+V4Label.Parent = V4Toggle
+
 V4Toggle.MouseButton1Click:Connect(function()
     getgenv().Config.AutoUpV4 = not getgenv().Config.AutoUpV4
-    V4Toggle.Text = "Auto Up V4: " .. (getgenv().Config.AutoUpV4 and "ON" or "OFF")
+    V4Label.Text = "Auto Up V4: " .. (getgenv().Config.AutoUpV4 and "ON" or "OFF")
 end)
 
-local LeviToggle = Instance.new("TextButton")
+local LeviToggle = Instance.new("ImageButton")
 LeviToggle.Size = UDim2.new(0, 250, 0, 40)
 LeviToggle.Position = UDim2.new(0, 40, 0, 70)
 LeviToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-LeviToggle.Text = "Auto Leviathan: OFF"
-LeviToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-LeviToggle.TextSize = 16
-LeviToggle.Font = Enum.Font.Gotham
+LeviToggle.Image = "rbxassetid://130284374965787"
 LeviToggle.Parent = EventsTab
+
+local LeviLabel = Instance.new("TextLabel")
+LeviLabel.Size = UDim2.new(1, 0, 1, 0)
+LeviLabel.BackgroundTransparency = 1
+LeviLabel.Text = "Auto Leviathan: OFF"
+LeviLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+LeviLabel.TextSize = 16
+LeviLabel.Font = Enum.Font.Gotham
+LeviLabel.Parent = LeviToggle
+
 LeviToggle.MouseButton1Click:Connect(function()
     getgenv().Config.AutoLeviathan = not getgenv().Config.AutoLeviathan
-    LeviToggle.Text = "Auto Leviathan: " .. (getgenv().Config.AutoLeviathan and "ON" or "OFF")
+    LeviLabel.Text = "Auto Leviathan: " .. (getgenv().Config.AutoLeviathan and "ON" or "OFF")
 end)
 
 local TeleportTab = Instance.new("Frame")
@@ -282,15 +303,22 @@ TeleportTab.BackgroundTransparency = 1
 TeleportTab.Visible = false
 TeleportTab.Parent = ContentFrame
 
-local IslandBtn = Instance.new("TextButton")
+local IslandBtn = Instance.new("ImageButton")
 IslandBtn.Size = UDim2.new(0, 250, 0, 40)
 IslandBtn.Position = UDim2.new(0, 40, 0, 20)
 IslandBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-IslandBtn.Text = "Teleport Dragon Island"
-IslandBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-IslandBtn.TextSize = 16
-IslandBtn.Font = Enum.Font.Gotham
+IslandBtn.Image = "rbxassetid://130284374965787"
 IslandBtn.Parent = TeleportTab
+
+local IslandLabel = Instance.new("TextLabel")
+IslandLabel.Size = UDim2.new(1, 0, 1, 0)
+IslandLabel.BackgroundTransparency = 1
+IslandLabel.Text = "Teleport Dragon Island"
+IslandLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+IslandLabel.TextSize = 16
+IslandLabel.Font = Enum.Font.Gotham
+IslandLabel.Parent = IslandBtn
+
 IslandBtn.MouseButton1Click:Connect(function()
     TeleportIsland("Dragon Island")
 end)
@@ -322,4 +350,4 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-print(PAIN HUB " Loaded Successfully!")
+print(SCRIPT_NAME .. " Loaded Successfully!")
