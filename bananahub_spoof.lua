@@ -1,13 +1,13 @@
 -- lang: Lua, target: Delta X / Roblox executor
--- script load từ GitHub raw, HWID spoof trước khi hit banana-hub.xyz
+-- wrap HWID spoof trước khi load banana-hub.xyz/loader/banana.lua
 
 local HttpService = game:GetService("HttpService")
 local StarterGui  = game:GetService("StarterGui")
 
 local function notify(title, msg, dur)
     pcall(function()
-        StarterGui:SetCore("SendNotification", {
-            Title = title, Text = msg, Duration = dur or 5
+        StarterGui:SetCore("SendNotification",{
+            Title=title, Text=msg, Duration=dur or 5
         })
     end)
     task.wait(0.3)
@@ -19,13 +19,6 @@ end
 local TARGET_HOST = "banana%-hub%.xyz"
 local HWID_KEYS   = {"hwid", "HWID", "hardware_id", "device_id", "hid"}
 local HWID_FILE   = "bananahub_hwid.txt"
-
--- URL thật của script (thử theo thứ tự)
-local SCRIPT_URLS = {
-    "https://raw.githubusercontent.com/Nghia11n/Banana-Hub/main/bananahub.lua",
-    "https://raw.githubusercontent.com/obiiyeuem/vthangsitink/main/BananaHub.lua",
-    "https://raw.githubusercontent.com/kimprobloxdz/Banana-Free/refs/heads/main/Protected_5609200582002947.lua.txt",
-}
 
 -- ────────────────────────────────────────────
 -- EXECUTOR COMPAT
@@ -72,14 +65,15 @@ end
 if not SPOOF_HWID or #SPOOF_HWID < 10 then
     SPOOF_HWID = gen_uuid()
     if write_fn then pcall(write_fn, HWID_FILE, SPOOF_HWID) end
+    notify("BH-Spoof", "HWID mới: " .. SPOOF_HWID:sub(1,8) .. "...", 4)
+else
+    notify("BH-Spoof", "HWID đã lưu: " .. SPOOF_HWID:sub(1,8) .. "...", 4)
 end
 
 local REAL_HWID = "UNKNOWN"
 pcall(function()
     if typeof(HWID) == "string" then REAL_HWID = HWID end
 end)
-
-notify("BH-Spoof", "HWID: " .. SPOOF_HWID:sub(1,8) .. "...", 4)
 
 -- ────────────────────────────────────────────
 -- PATCH HELPERS
@@ -163,41 +157,23 @@ end
 if not hooked then
     pcall(function()
         local env=getfenv(0)
-        if env and env.request then rawset(env,"request",hooked_request); hooked=true end
+        if env and env.request then
+            rawset(env,"request",hooked_request); hooked=true
+        end
     end)
 end
 
 if hooked then
-    notify("BH-Spoof ✓", "Hook OK", 3)
+    notify("BH-Spoof ✓", "Hook OK — đang load...", 3)
 else
-    notify("BH-Spoof ⚠", "Hook không cài được", 4)
+    notify("BH-Spoof ⚠", "Hook thất bại", 4)
 end
 
 -- ────────────────────────────────────────────
--- LOAD SCRIPT — thử từng URL
+-- LOAD BANANA HUB — script gốc của mày
 -- ────────────────────────────────────────────
 task.wait(1)
-notify("BH-Spoof", "Đang tìm script...", 3)
-
-local loaded = false
-for _, url in ipairs(SCRIPT_URLS) do
-    local ok, res = pcall(function()
-        return game:HttpGet(url)
-    end)
-    if ok and res and #res > 50 and not res:find("404") and not res:find("<html") then
-        local fn, lerr = loadstring(res)
-        if fn then
-            notify("BH-Spoof ✓", "Load OK — đang chạy...", 4)
-            task.wait(0.5)
-            pcall(fn)
-            loaded = true
-            break
-        else
-            notify("Parse ✗", tostring(lerr):sub(1,60), 5)
-        end
-    end
-end
-
-if not loaded then
-    notify("BH-Spoof ✗", "Không load được — script có thể đã đổi URL", 7)
-end
+repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
+getgenv().Key = ""
+getgenv().__BANANA_SCRIPT_ROUTE = "bf_main"
+return loadstring(game:HttpGet("https://banana-hub.xyz/loader/banana.lua"))()
