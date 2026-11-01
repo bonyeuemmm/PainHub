@@ -1,5 +1,5 @@
 -- lang: Lua, target: Delta X
--- spoof HWID ở tầng getter, không đụng request
+-- HWID + Key cố định, không hook request, không freeze
 
 local StarterGui = game:GetService("StarterGui")
 
@@ -12,53 +12,19 @@ local function notify(msg)
 end
 
 -- ────────────────────────────────────────────
--- HWID cố định
+-- HWID + KEY CỐ ĐỊNH
 -- ────────────────────────────────────────────
-local read_fn  = readfile  or nil
-local write_fn = writefile or nil
-local exist_fn = isfile    or nil
+local SPOOF_HWID = "2ee6fde30cee4bc6"
+local SPOOF_KEY  = "1d1a8bc57e371c8d0d907a1b"
 
-local function gen_uuid()
-    local rand  = Random.new(0xDEADBEEF)
-    local hex   = "0123456789ABCDEF"
-    local parts = {8,4,4,4,12}
-    local segs  = {}
-    for _,len in ipairs(parts) do
-        local seg=""
-        for _=1,len do
-            seg=seg..hex:sub(rand:NextInteger(1,16),rand:NextInteger(1,16))
-        end
-        table.insert(segs,seg)
-    end
-    return table.concat(segs,"-")
-end
-
-local SPOOF_HWID
-if exist_fn and read_fn then
-    pcall(function()
-        if exist_fn("bh_hwid.txt") then
-            SPOOF_HWID=read_fn("bh_hwid.txt"):gsub("%s+","")
-        end
-    end)
-end
-if not SPOOF_HWID or #SPOOF_HWID<10 then
-    SPOOF_HWID=gen_uuid()
-    if write_fn then pcall(write_fn,"bh_hwid.txt",SPOOF_HWID) end
-end
-
-notify("HWID: "..SPOOF_HWID:sub(1,8).."...")
-
--- ────────────────────────────────────────────
--- OVERRIDE HWID GETTERS — trước khi script đọc
--- ────────────────────────────────────────────
-
--- set global phổ biến
+-- set toàn bộ global trước khi script đọc
 getgenv().HWID        = SPOOF_HWID
 getgenv().hwid        = SPOOF_HWID
 getgenv().HardwareID  = SPOOF_HWID
 getgenv().hardware_id = SPOOF_HWID
+getgenv().Key         = SPOOF_KEY
 
--- syn
+-- override syn nếu có
 if syn then
     pcall(function()
         if syn.get_hwid then
@@ -67,31 +33,48 @@ if syn then
     end)
 end
 
--- hookfunction nếu executor hỗ trợ
-if hookfunction then
-    -- hook hàm get_hwid nếu tồn tại global
-    if get_hwid then
-        pcall(function()
-            hookfunction(get_hwid, function() return SPOOF_HWID end)
-        end)
-    end
+-- hookfunction nếu Delta X hỗ trợ
+if hookfunction and get_hwid then
+    pcall(function()
+        hookfunction(get_hwid, function() return SPOOF_HWID end)
+    end)
 end
 
--- replaceclosure nếu có
-if replaceclosure then
-    if get_hwid then
-        pcall(function()
-            replaceclosure(get_hwid, function() return SPOOF_HWID end)
-        end)
-    end
-end
-
-notify("Hook OK — loading BH...")
+notify("HWID + Key đã set")
 
 -- ────────────────────────────────────────────
--- LOAD BANANA HUB — không thay đổi gì
+-- PATCH TRONG SOURCE
 -- ────────────────────────────────────────────
 repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
-getgenv().Key=""
-getgenv().__BANANA_SCRIPT_ROUTE="bf_main"
-loadstring(game:HttpGet("https://banana-hub.xyz/loader/banana.lua"))()
+
+local source
+pcall(function()
+    source = game:HttpGet("https://banana-hub.xyz/loader/banana.lua")
+end)
+
+if not source or #source < 10 then
+    notify("Tải thất bại")
+    return
+end
+
+-- patch HWID và key thẳng trong source
+local patched = source
+patched = patched:gsub('syn%.get_hwid%(%)',       '"'..SPOOF_HWID..'"')
+patched = patched:gsub('get_hwid%(%)',            '"'..SPOOF_HWID..'"')
+patched = patched:gsub('(local%s+hwid%s*=%s*)[%w_%.%(%)]+',    '%1"'..SPOOF_HWID..'"')
+patched = patched:gsub('(local%s+HWID%s*=%s*)[%w_%.%(%)]+',    '%1"'..SPOOF_HWID..'"')
+patched = patched:gsub('(local%s+hid%s*=%s*)[%w_%.%(%)]+',     '%1"'..SPOOF_HWID..'"')
+patched = patched:gsub('(local%s+key%s*=%s*)[%w_%.%(%)%[%]"\']+', '%1"'..SPOOF_KEY..'"')
+patched = patched:gsub('(local%s+Key%s*=%s*)[%w_%.%(%)%[%]"\']+', '%1"'..SPOOF_KEY..'"')
+
+notify("Đang chạy Banana Hub...")
+
+getgenv().__BANANA_SCRIPT_ROUTE = "bf_main"
+
+local fn, err = loadstring(patched)
+if fn then
+    fn()
+else
+    -- fallback chạy gốc với global đã set sẵn
+    loadstring(source)()
+end
