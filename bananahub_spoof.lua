@@ -1,81 +1,99 @@
--- lang: Lua, target: Roblox executor (Synapse X / KRNL / Fluxus / Celery)
+-- lang: Lua, target: Delta X / Roblox executor
 -- endpoint: banana-hub.xyz
--- method: request hook → intercept → HWID swap before transmission
+-- notification hiện trong game thay vì log
 
-local HttpService = game:GetService("HttpService")
+local HttpService  = game:GetService("HttpService")
+local StarterGui   = game:GetService("StarterGui")
+
+-- ────────────────────────────────────────────
+-- NOTIFY — hiện thông báo góc màn hình game
+-- ────────────────────────────────────────────
+local function notify(title, msg, duration)
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title    = title or "BH-Spoof",
+            Text     = msg   or "",
+            Duration = duration or 4,
+        })
+    end)
+end
 
 -- ────────────────────────────────────────────
 -- CONFIG
 -- ────────────────────────────────────────────
-local HWID_FILE    = "bananahub_hwid.txt"
-local TARGET_HOST  = "banana%-hub%.xyz"
-local HWID_KEYS    = {"hwid", "HWID", "hardware_id", "device_id", "hid"}
+local HWID_FILE   = "bananahub_hwid.txt"
+local TARGET_HOST = "banana%-hub%.xyz"
+local HWID_KEYS   = {"hwid", "HWID", "hardware_id", "device_id", "hid"}
 
 -- ────────────────────────────────────────────
 -- EXECUTOR COMPAT
 -- ────────────────────────────────────────────
-local req_fn  = syn and syn.request
-             or (request ~= nil and request)
-             or (http  and http.request)
+local req_fn = (syn and syn.request)
+            or (typeof(request)  == "function" and request)
+            or (http and http.request)
 
-local read_fn  = readfile  or (syn and syn.readfile)
-local write_fn = writefile or (syn and syn.writefile)
-local exist_fn = isfile    or (syn and syn.isfile)
+local read_fn  = readfile  or (syn and syn.readfile)  or nil
+local write_fn = writefile or (syn and syn.writefile) or nil
+local exist_fn = isfile    or (syn and syn.isfile)    or nil
 
-assert(req_fn,   "[BH-Spoof] no HTTP request function found — check executor")
-assert(write_fn, "[BH-Spoof] no writefile — executor too restricted")
-
--- ────────────────────────────────────────────
--- REAL HWID
--- ────────────────────────────────────────────
-local function get_real_hwid()
-    if syn and syn.crypto and syn.crypto.hash then
-        return tostring(syn.crypto.hash("sha256", tostring(os.time()):sub(1,8)))
-    end
-    if typeof(HWID) == "string" then return HWID end
-    if getexecutorname and getexecutorname():lower():find("flux") then
-        return fluxus and fluxus.get_hwid and fluxus.get_hwid() or "UNKNOWN"
-    end
-    return "UNKNOWN"
+if not req_fn then
+    notify("BH-Spoof ✗", "Không tìm thấy hàm request!", 6)
+    return
 end
 
 -- ────────────────────────────────────────────
--- PERSISTENT SPOOFED HWID
+-- GEN UUID
 -- ────────────────────────────────────────────
 local function gen_uuid()
-    local SEED   = 0xDEADBEEF
-    local rand   = Random.new(SEED)
-    local hex    = "0123456789ABCDEF"
-    local parts  = {8, 4, 4, 4, 12}
-    local segs   = {}
+    local SEED  = 0xDEADBEEF
+    local rand  = Random.new(SEED)
+    local hex   = "0123456789ABCDEF"
+    local parts = {8, 4, 4, 4, 12}
+    local segs  = {}
     for _, len in ipairs(parts) do
         local seg = ""
         for _ = 1, len do
-            seg = seg .. hex:sub(rand:NextInteger(1, 16), rand:NextInteger(1, 16))
+            seg = seg .. hex:sub(rand:NextInteger(1,16), rand:NextInteger(1,16))
         end
         table.insert(segs, seg)
     end
     return table.concat(segs, "-")
 end
 
+-- ────────────────────────────────────────────
+-- PERSISTENT SPOOFED HWID
+-- ────────────────────────────────────────────
 local SPOOF_HWID
-do
-    local ok = pcall(function()
+
+if exist_fn and read_fn then
+    pcall(function()
         if exist_fn(HWID_FILE) then
             SPOOF_HWID = read_fn(HWID_FILE):gsub("%s+", "")
         end
     end)
-    if not SPOOF_HWID or #SPOOF_HWID < 10 then
-        SPOOF_HWID = gen_uuid()
-        pcall(write_fn, HWID_FILE, SPOOF_HWID)
-        print("[BH-Spoof] new HWID generated → " .. SPOOF_HWID)
-    else
-        print("[BH-Spoof] loaded stored HWID → " .. SPOOF_HWID)
-    end
 end
 
-local REAL_HWID = get_real_hwid()
-print("[BH-Spoof] real HWID masked: " .. tostring(REAL_HWID):sub(1,8) .. "...")
+if not SPOOF_HWID or #SPOOF_HWID < 10 then
+    SPOOF_HWID = gen_uuid()
+    if write_fn then
+        pcall(write_fn, HWID_FILE, SPOOF_HWID)
+    end
+    notify("BH-Spoof", "HWID mới: " .. SPOOF_HWID:sub(1,8) .. "...", 5)
+else
+    notify("BH-Spoof", "HWID đã lưu: " .. SPOOF_HWID:sub(1,8) .. "...", 5)
+end
+
+-- ────────────────────────────────────────────
+-- REAL HWID
+-- ────────────────────────────────────────────
+local REAL_HWID = "UNKNOWN"
+pcall(function()
+    if syn and syn.crypto and syn.crypto.hash then
+        REAL_HWID = tostring(syn.crypto.hash("sha256", tostring(os.time()):sub(1,8)))
+    elseif typeof(HWID) == "string" then
+        REAL_HWID = HWID
+    end
+end)
 
 -- ────────────────────────────────────────────
 -- PATCH HELPERS
@@ -84,7 +102,7 @@ local function patch_url(url)
     for _, k in ipairs(HWID_KEYS) do
         local pattern = "([?&])(" .. k .. "=)([^&]+)"
         if url:match(pattern) then
-            url = url:gsub(pattern, function(sep, key, val)
+            url = url:gsub(pattern, function(sep, key)
                 return sep .. key .. SPOOF_HWID
             end)
         end
@@ -100,16 +118,12 @@ local function patch_json_body(body)
     if not ok then return body end
     local changed = false
     for _, k in ipairs(HWID_KEYS) do
-        if tbl[k] then
-            tbl[k]  = SPOOF_HWID
-            changed = true
-        end
+        if tbl[k] then tbl[k] = SPOOF_HWID; changed = true end
     end
     if REAL_HWID ~= "UNKNOWN" then
         for k, v in pairs(tbl) do
             if type(v) == "string" and v == REAL_HWID then
-                tbl[k]  = SPOOF_HWID
-                changed = true
+                tbl[k] = SPOOF_HWID; changed = true
             end
         end
     end
@@ -120,7 +134,7 @@ local function patch_form_body(body)
     for _, k in ipairs(HWID_KEYS) do
         local pattern = "([&^]?)(" .. k .. "=)([^&]+)"
         if body:match(pattern) then
-            body = body:gsub(pattern, function(sep, key, val)
+            body = body:gsub(pattern, function(sep, key)
                 return sep .. key .. SPOOF_HWID
             end)
         end
@@ -135,9 +149,10 @@ end
 -- REQUEST HOOK
 -- ────────────────────────────────────────────
 local function hooked_request(opts)
-    local url = opts.Url or opts.url or ""
+    pcall(function()
+        local url = opts.Url or opts.url or ""
+        if not url:find(TARGET_HOST) then return end
 
-    if url:find(TARGET_HOST) then
         local new_url = patch_url(url)
         if opts.Url then opts.Url = new_url else opts.url = new_url end
 
@@ -147,14 +162,12 @@ local function hooked_request(opts)
                 opts.Headers["Content-Type"] or
                 opts.Headers["content-type"]
             )) or ""
-
             local new_body
             if ct:find("application/json") or body:sub(1,1) == "{" then
                 new_body = patch_json_body(body)
             else
                 new_body = patch_form_body(body)
             end
-
             if opts.Body then opts.Body = new_body else opts.body = new_body end
         end
 
@@ -165,7 +178,7 @@ local function hooked_request(opts)
                 end
             end
         end
-    end
+    end)
 
     return req_fn(opts)
 end
@@ -173,22 +186,34 @@ end
 -- ────────────────────────────────────────────
 -- INSTALL HOOK
 -- ────────────────────────────────────────────
+local hooked = false
+
 if syn then
-    syn.request = hooked_request
-elseif request then
-    local ok = pcall(function() request = hooked_request end)
+    pcall(function() syn.request = hooked_request; hooked = true end)
+end
+
+if not hooked then
+    local ok = pcall(function() request = hooked_request; hooked = true end)
     if not ok then
-        local env = getfenv(0)
-        if env and env.request then
-            pcall(function()
+        pcall(function()
+            local env = getfenv(0)
+            if env and env.request then
                 rawset(env, "request", hooked_request)
-            end)
-        end
+                hooked = true
+            end
+        end)
     end
 end
 
-print("[BH-Spoof] hook installed — HWID locked to " .. SPOOF_HWID)
-print("[BH-Spoof] paste hoặc loadstring Banana Hub script bên dưới dòng này")
+-- thông báo kết quả hook
+if hooked then
+    notify("BH-Spoof ✓", "Hook OK — đang load Banana Hub...", 4)
+else
+    notify("BH-Spoof ⚠", "Hook thất bại — thử chạy tiếp Banana Hub không spoof", 5)
+end
 
--- Bỏ comment dòng dưới nếu muốn tự load Banana Hub luôn sau khi hook cài xong:
+-- ────────────────────────────────────────────
+-- LOAD BANANA HUB
+-- ────────────────────────────────────────────
+task.wait(1) -- chờ notify hiện xong rồi mới load
 loadstring(game:HttpGet("https://banana-hub.xyz/loader.lua"))()
