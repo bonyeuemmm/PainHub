@@ -1,12 +1,7 @@
--- ════════════════════════════════════════════
--- BANANA HUB LOADER
--- ════════════════════════════════════════════
+local ROUTE = getgenv().BH_ROUTE
+           or getgenv().__BANANA_SCRIPT_ROUTE
+           or "bf_main"
 
-local ROUTE = getgenv().__BANANA_SCRIPT_ROUTE or "bf_main"
-
--- ════════════════════════════════════════════
--- HWID LOCK
--- ════════════════════════════════════════════
 local mt = getrawmetatable(game)
 local old_namecall = mt.__namecall
 setreadonly(mt, false)
@@ -26,9 +21,6 @@ end
 
 setreadonly(mt, true)
 
--- ════════════════════════════════════════════
--- CHẠY
--- ════════════════════════════════════════════
 repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
 getgenv().Key = "1d1a8bc57e371c8d0d907a1b"
 getgenv().__BANANA_SCRIPT_ROUTE = ROUTE
