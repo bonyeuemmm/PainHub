@@ -1,12 +1,8 @@
-local ROUTE = getgenv().BH_ROUTE
-           or getgenv().__BANANA_SCRIPT_ROUTE
-           or "bf_main"
-
 local mt = getrawmetatable(game)
 local old_namecall = mt.__namecall
 setreadonly(mt, false)
 
-mt.__namecall = function(self, ...)
+mt.__namecall = newcclosure(function(self, ...)
     local method = getnamecallmethod()
     if method == "HttpGet" then
         local args = {...}
@@ -17,11 +13,11 @@ mt.__namecall = function(self, ...)
         end
     end
     return old_namecall(self, ...)
-end
+end)
 
 setreadonly(mt, true)
 
 repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
 getgenv().Key = "1d1a8bc57e371c8d0d907a1b"
-getgenv().__BANANA_SCRIPT_ROUTE = ROUTE
+getgenv().__BANANA_SCRIPT_ROUTE = "bf_main"
 return loadstring(game:HttpGet("https://banana-hub.xyz/loader/banana.lua"))()
